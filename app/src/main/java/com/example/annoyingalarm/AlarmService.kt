@@ -32,12 +32,14 @@ class AlarmService : Service() {
 
         val alarmId = intent?.getStringExtra("ALARM_ID") ?: ""
         val alarmLabel = intent?.getStringExtra("ALARM_LABEL") ?: "Alarm Ringing"
+        val snoozeMinutes = intent?.getIntExtra("ALARM_SNOOZE_MINUTES", 5) ?: 5
 
         createNotificationChannel()
 
         val fullScreenIntent = Intent(this, AlarmRingingActivity::class.java).apply {
             putExtra("ALARM_ID", alarmId)
             putExtra("ALARM_LABEL", alarmLabel)
+            putExtra("ALARM_SNOOZE_MINUTES", snoozeMinutes)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
 

@@ -12,6 +12,7 @@ data class AlarmItem(
     val isEnabled: Boolean = true,
     val label: String = "Alarm",
     val repeatDays: Set<Int> = emptySet(), // 1 = Sun, 2 = Mon, ..., 7 = Sat
+    val snoozeMinutes: Int = 5,
     val snoozeCount: Int = 0
 ) {
     fun getFormattedTime(): String {
@@ -45,8 +46,8 @@ class AlarmStorage(context: Context) {
 
     private fun defaultAlarms(): List<AlarmItem> {
         val defaults = listOf(
-            AlarmItem(hour = 7, minute = 0, isEnabled = true, label = "Wake up!"),
-            AlarmItem(hour = 8, minute = 30, isEnabled = false, label = "Work time")
+            AlarmItem(hour = 7, minute = 0, isEnabled = true, label = "Wake up!", snoozeMinutes = 5),
+            AlarmItem(hour = 8, minute = 30, isEnabled = false, label = "Work time", snoozeMinutes = 10)
         )
         saveAlarms(defaults)
         return defaults

@@ -18,6 +18,7 @@ class AlarmScheduler(private val context: Context) {
             putExtra("ALARM_LABEL", alarm.label)
             putExtra("ALARM_HOUR", alarm.hour)
             putExtra("ALARM_MINUTE", alarm.minute)
+            putExtra("ALARM_SNOOZE_MINUTES", alarm.snoozeMinutes)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -68,7 +69,6 @@ class AlarmScheduler(private val context: Context) {
             return target.timeInMillis
         }
 
-        // Repeat days selected (Calendar.SUNDAY = 1 ... Calendar.SATURDAY = 7)
         val currentDay = now.get(Calendar.DAY_OF_WEEK)
         if (repeatDays.contains(currentDay) && target.after(now)) {
             return target.timeInMillis
@@ -88,7 +88,8 @@ class AlarmScheduler(private val context: Context) {
     fun scheduleSnooze(alarmId: String, label: String, snoozeMinutes: Int = 5) {
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             putExtra("ALARM_ID", alarmId)
-            putExtra("ALARM_LABEL", "$label (Snoozed)")
+            putExtra("ALARM_LABEL", label)
+            putExtra("ALARM_SNOOZE_MINUTES", snoozeMinutes)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(

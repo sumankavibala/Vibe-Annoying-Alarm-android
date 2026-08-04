@@ -35,7 +35,6 @@ class AlarmRingingActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Ensure window displays over lockscreen and keeps screen awake
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -49,37 +48,36 @@ class AlarmRingingActivity : ComponentActivity() {
 
         val alarmId = intent.getStringExtra("ALARM_ID") ?: ""
         val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Wake Up!"
+        val snoozeMinutes = intent.getIntExtra("ALARM_SNOOZE_MINUTES", 5)
 
         setContent {
             MaterialTheme(
                 colorScheme = darkColorScheme(
-                    background = Color(0xFF0F172A),
-                    surface = Color(0xFF1E293B)
+                    background = Color(0xFF000000),
+                    surface = Color(0xFF121212)
                 )
             ) {
                 AlarmRingingScreen(
                     label = alarmLabel,
-                    onSnoozeRequested = { showAdScreen(isSnooze = true, alarmId = alarmId, label = alarmLabel) },
-                    onStopRequested = { showAdScreen(isSnooze = false, alarmId = alarmId, label = alarmLabel) }
+                    snoozeMinutes = snoozeMinutes,
+                    onSnoozeRequested = { showAdScreen(isSnooze = true, alarmId = alarmId, label = alarmLabel, snoozeMinutes = snoozeMinutes) },
+                    onStopRequested = { showAdScreen(isSnooze = false, alarmId = alarmId, label = alarmLabel, snoozeMinutes = snoozeMinutes) }
                 )
             }
         }
     }
 
-    private var currentAdState by mutableStateOf<AdState?>(null)
-
-    data class AdState(val isSnooze: Boolean, val alarmId: String, val label: String)
-
-    private fun showAdScreen(isSnooze: Boolean, alarmId: String, label: String) {
+    private fun showAdScreen(isSnooze: Boolean, alarmId: String, label: String, snoozeMinutes: Int) {
         setContent {
             MaterialTheme(
                 colorScheme = darkColorScheme(
-                    background = Color(0xFF090D16),
-                    surface = Color(0xFF1E293B)
+                    background = Color(0xFF000000),
+                    surface = Color(0xFF121212)
                 )
             ) {
                 AnnoyingAdOverlay(
                     isSnooze = isSnooze,
+                    snoozeMinutes = snoozeMinutes,
                     onAdCompleted = {
                         val serviceIntent = Intent(this@AlarmRingingActivity, AlarmService::class.java).apply {
                             action = "STOP_ALARM"
@@ -87,7 +85,7 @@ class AlarmRingingActivity : ComponentActivity() {
                         startService(serviceIntent)
 
                         if (isSnooze) {
-                            AlarmScheduler(applicationContext).scheduleSnooze(alarmId, label, snoozeMinutes = 5)
+                            AlarmScheduler(applicationContext).scheduleSnooze(alarmId, label, snoozeMinutes = snoozeMinutes)
                         }
 
                         finish()
@@ -101,6 +99,7 @@ class AlarmRingingActivity : ComponentActivity() {
 @Composable
 fun AlarmRingingScreen(
     label: String,
+    snoozeMinutes: Int,
     onSnoozeRequested: () -> Unit,
     onStopRequested: () -> Unit
 ) {
@@ -120,7 +119,7 @@ fun AlarmRingingScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF31103F))
+                    colors = listOf(Color(0xFF000000), Color(0xFF2A0812), Color(0xFF4C0B1B))
                 )
             )
             .padding(24.dp),
@@ -140,13 +139,13 @@ fun AlarmRingingScreen(
                     .size(160.dp)
                     .scale(scale)
                     .clip(CircleShape)
-                    .background(Color(0xFFFF0055).copy(alpha = 0.2f))
-                    .border(2.dp, Color(0xFFFF0055), CircleShape)
+                    .background(Color(0xFFDC2626).copy(alpha = 0.2f))
+                    .border(2.dp, Color(0xFFDC2626), CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.NotificationsActive,
                     contentDescription = "Ringing",
-                    tint = Color(0xFFFF0055),
+                    tint = Color(0xFFDC2626),
                     modifier = Modifier.size(80.dp)
                 )
             }
@@ -163,7 +162,7 @@ fun AlarmRingingScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Surface(
-                    color = Color(0xFFFF3366).copy(alpha = 0.15f),
+                    color = Color(0xFFDC2626).copy(alpha = 0.15f),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Row(
@@ -173,13 +172,13 @@ fun AlarmRingingScreen(
                         Icon(
                             imageVector = Icons.Default.Warning,
                             contentDescription = "Warning",
-                            tint = Color(0xFFFF3366),
+                            tint = Color(0xFFDC2626),
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Ad Required to Snooze or Stop!",
-                            color = Color(0xFFFF3366),
+                            color = Color(0xFFDC2626),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -189,31 +188,37 @@ fun AlarmRingingScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Action buttons
-            Column(
+            // Action buttons side-by-side (parallel)
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Button(
                     onClick = onSnoozeRequested,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6)),
+                        .weight(1f)
+                        .height(68.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Snooze (5 Min) - Watch Ad", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Snooze (${snoozeMinutes}m)", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Watch Ad", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                    }
                 }
 
                 Button(
                     onClick = onStopRequested,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                        .weight(1f)
+                        .height(68.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("STOP ALARM - Watch Ad", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("STOP", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Watch Ad", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                    }
                 }
             }
 
@@ -225,6 +230,7 @@ fun AlarmRingingScreen(
 @Composable
 fun AnnoyingAdOverlay(
     isSnooze: Boolean,
+    snoozeMinutes: Int,
     onAdCompleted: () -> Unit
 ) {
     var timeLeftSeconds by remember { mutableStateOf(10) }
@@ -248,7 +254,7 @@ fun AnnoyingAdOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0F172A))
+            .background(Color(0xFF000000))
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -257,9 +263,8 @@ fun AnnoyingAdOverlay(
             verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxSize()
         ) {
-            // Header: Sponsor Banner
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF121212)),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -268,12 +273,12 @@ fun AnnoyingAdOverlay(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
-                        color = Color(0xFFF59E0B),
+                        color = Color(0xFFDC2626),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
                             "AD",
-                            color = Color.Black,
+                            color = Color.White,
                             fontWeight = FontWeight.Black,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -287,13 +292,12 @@ fun AnnoyingAdOverlay(
                 }
             }
 
-            // Interactive Annoying Task
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = if (isSnooze) "Snooze Verification" else "Stop Verification",
+                    text = if (isSnooze) "Snooze (${snoozeMinutes}m) Verification" else "Stop Verification",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -313,7 +317,7 @@ fun AnnoyingAdOverlay(
                     CircularProgressIndicator(
                         progress = { (10 - timeLeftSeconds) / 10f },
                         modifier = Modifier.size(64.dp),
-                        color = Color(0xFFF59E0B),
+                        color = Color(0xFFDC2626),
                         trackColor = Color.Gray.copy(alpha = 0.3f),
                     )
                 } else {

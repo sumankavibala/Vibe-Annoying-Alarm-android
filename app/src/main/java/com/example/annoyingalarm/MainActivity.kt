@@ -9,7 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 
@@ -35,55 +35,63 @@ class MainActivity : ComponentActivity() {
         checkPermissions()
 
         setContent {
+            var isSplashVisible by remember { mutableStateOf(true) }
+
             MaterialTheme(
                 colorScheme = darkColorScheme(
-                    background = Color(0xFF0F172A),
-                    surface = Color(0xFF1E293B),
-                    primary = Color(0xFF38BDF8)
+                    background = Color(0xFF000000),
+                    surface = Color(0xFF121212),
+                    primary = Color(0xFFDC2626)
                 )
             ) {
-                AlarmListScreen(
-                    alarms = alarmList,
-                    onToggleAlarm = { alarm, isChecked ->
-                        val index = alarmList.indexOfFirst { it.id == alarm.id }
-                        if (index != -1) {
-                            val updated = alarmList[index].copy(isEnabled = isChecked)
-                            alarmList[index] = updated
-                            storage.saveAlarms(alarmList.toList())
+                if (isSplashVisible) {
+                    SplashScreen(onSplashFinished = { isSplashVisible = false })
+                } else {
+                    AlarmListScreen(
+                        alarms = alarmList,
+                        onToggleAlarm = { alarm, isChecked ->
+                            val index = alarmList.indexOfFirst { it.id == alarm.id }
+                            if (index != -1) {
+                                val updated = alarmList[index].copy(isEnabled = isChecked)
+                                alarmList[index] = updated
+                                storage.saveAlarms(alarmList.toList())
 
-                            if (isChecked) {
-                                scheduler.schedule(updated)
-                            } else {
-                                scheduler.cancel(updated)
+                                if (isChecked) {
+                                    scheduler.schedule(updated)
+                                } else {
+                                    scheduler.cancel(updated)
+                                }
                             }
-                        }
-                    },
-                    onAddAlarm = { newAlarm ->
-                        alarmList.add(newAlarm)
-                        storage.saveAlarms(alarmList.toList())
-                        scheduler.schedule(newAlarm)
-                    },
-                    onUpdateAlarm = { updatedAlarm ->
-                        val index = alarmList.indexOfFirst { it.id == updatedAlarm.id }
-                        if (index != -1) {
-                            alarmList[index] = updatedAlarm
+                        },
+                        onAddAlarm = { newAlarm ->
+                            alarmList.add(newAlarm)
                             storage.saveAlarms(alarmList.toList())
-                            if (updatedAlarm.isEnabled) {
-                                scheduler.schedule(updatedAlarm)
-                            } else {
-                                scheduler.cancel(updatedAlarm)
+                            scheduler.schedule(newAlarm)
+                        },
+                        onUpdateAlarm = { updatedAlarm ->
+                            val index = alarmList.indexOfFirst { it.id == updatedAlarm.id }
+                            if (index != -1) {
+                                alarmList[index] = updatedAlarm
+                                storage.saveAlarms(alarmList.toList())
+                                if (updatedAlarm.isEnabled) {
+                                    scheduler.schedule(updatedAlarm)
+                                } else {
+                                    scheduler.cancel(updatedAlarm)
+                                }
                             }
+                        },
+                        onDeleteAlarm = { alarm ->
+                            scheduler.cancel(alarm)
+                            alarmList.removeIf { it.id == alarm.id }
+                            storage.saveAlarms(alarmList.toList())
                         }
-                    },
-                    onDeleteAlarm = { alarm ->
-                        scheduler.cancel(alarm)
-                        alarmList.removeIf { it.id == alarm.id }
-                        storage.saveAlarms(alarmList.toList())
-                    }
-                )
+                    )
+                }
             }
         }
     }
+
+
 
     private fun checkPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

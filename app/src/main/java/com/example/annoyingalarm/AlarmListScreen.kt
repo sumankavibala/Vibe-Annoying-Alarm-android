@@ -1,5 +1,6 @@
 package com.example.annoyingalarm
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,10 +23,61 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Calendar
+
+val CherryRed = Color(0xFFDC2626)
+val CherryRedLight = Color(0xFFEF4444)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SplashScreen(onSplashFinished: () -> Unit) {
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(1200)
+        onSplashFinished()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF000000)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(CherryRed.copy(alpha = 0.2f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.NotificationsActive,
+                    contentDescription = "Annoying Alarm Splash Logo",
+                    tint = CherryRed,
+                    modifier = Modifier.size(64.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Annoying Alarm",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "No Easy Snooze.",
+                fontSize = 14.sp,
+                color = CherryRed,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +99,7 @@ fun AlarmListScreen(
                         Icon(
                             imageVector = Icons.Default.Alarm,
                             contentDescription = "Clock",
-                            tint = Color(0xFF38BDF8)
+                            tint = CherryRed
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
@@ -62,8 +115,8 @@ fun AlarmListScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { isAddingNewAlarm = true },
-                containerColor = Color(0xFF38BDF8),
-                contentColor = Color(0xFF000000),
+                containerColor = CherryRed,
+                contentColor = Color.White,
                 shape = CircleShape,
                 modifier = Modifier.size(64.dp)
             ) {
@@ -116,7 +169,7 @@ fun AlarmListScreen(
                             state = dismissState,
                             backgroundContent = {
                                 val color = when (dismissState.dismissDirection) {
-                                    SwipeToDismissBoxValue.StartToEnd, SwipeToDismissBoxValue.EndToStart -> Color(0xFFEF4444)
+                                    SwipeToDismissBoxValue.StartToEnd, SwipeToDismissBoxValue.EndToStart -> CherryRed
                                     else -> Color.Transparent
                                 }
                                 Box(
@@ -155,7 +208,8 @@ fun AlarmListScreen(
             hour = cal.get(Calendar.HOUR_OF_DAY),
             minute = cal.get(Calendar.MINUTE),
             isEnabled = true,
-            label = "Alarm"
+            label = "Alarm",
+            snoozeMinutes = 5
         )
         AlarmBottomSheet(
             alarm = newAlarm,
@@ -215,13 +269,13 @@ fun AlarmCard(
                     Text(
                         text = alarm.label,
                         fontSize = 14.sp,
-                        color = if (alarm.isEnabled) Color(0xFF38BDF8) else Color.Gray,
+                        color = if (alarm.isEnabled) CherryRed else Color.Gray,
                         fontWeight = FontWeight.Medium
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "• ${alarm.getRepeatDaysText()}",
-                        fontSize = 14.sp,
+                        text = "• ${alarm.getRepeatDaysText()} • Snooze ${alarm.snoozeMinutes}m",
+                        fontSize = 13.sp,
                         color = Color.Gray
                     )
                 }
@@ -232,7 +286,7 @@ fun AlarmCard(
                 onCheckedChange = onToggle,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color(0xFF000000),
-                    checkedTrackColor = Color(0xFF38BDF8),
+                    checkedTrackColor = CherryRed,
                     uncheckedThumbColor = Color.Gray,
                     uncheckedTrackColor = Color(0xFF262626)
                 )
@@ -258,6 +312,9 @@ fun AlarmBottomSheet(
     var isInputModeKeyboard by remember { mutableStateOf(false) }
     var label by remember { mutableStateOf(alarm.label) }
     var repeatDays by remember { mutableStateOf(alarm.repeatDays) }
+    var snoozeMinutes by remember { mutableStateOf(alarm.snoozeMinutes) }
+
+    val snoozeOptions = listOf(1, 5, 10, 15, 20, 25, 30)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -291,7 +348,7 @@ fun AlarmBottomSheet(
                     Icon(
                         imageVector = if (isInputModeKeyboard) Icons.Default.Schedule else Icons.Default.Keyboard,
                         contentDescription = "Toggle Time Picker Mode",
-                        tint = Color(0xFF38BDF8)
+                        tint = CherryRed
                     )
                 }
             }
@@ -307,14 +364,14 @@ fun AlarmBottomSheet(
                     TimeInput(
                         state = timePickerState,
                         colors = TimePickerDefaults.colors(
-                            timeSelectorSelectedContainerColor = Color(0xFF38BDF8).copy(alpha = 0.2f),
+                            timeSelectorSelectedContainerColor = CherryRed.copy(alpha = 0.2f),
                             timeSelectorUnselectedContainerColor = Color(0xFF1E1E1E),
-                            timeSelectorSelectedContentColor = Color(0xFF38BDF8),
+                            timeSelectorSelectedContentColor = CherryRed,
                             timeSelectorUnselectedContentColor = Color.White,
-                            periodSelectorBorderColor = Color(0xFF38BDF8),
-                            periodSelectorSelectedContainerColor = Color(0xFF38BDF8),
+                            periodSelectorBorderColor = CherryRed,
+                            periodSelectorSelectedContainerColor = CherryRed,
                             periodSelectorUnselectedContainerColor = Color(0xFF1E1E1E),
-                            periodSelectorSelectedContentColor = Color(0xFF000000),
+                            periodSelectorSelectedContentColor = Color.White,
                             periodSelectorUnselectedContentColor = Color.White
                         )
                     )
@@ -323,18 +380,18 @@ fun AlarmBottomSheet(
                         state = timePickerState,
                         colors = TimePickerDefaults.colors(
                             clockDialColor = Color(0xFF1E1E1E),
-                            clockDialSelectedContentColor = Color(0xFF000000),
+                            clockDialSelectedContentColor = Color.White,
                             clockDialUnselectedContentColor = Color.White,
-                            selectorColor = Color(0xFF38BDF8),
+                            selectorColor = CherryRed,
                             containerColor = Color(0xFF1E1E1E),
-                            periodSelectorBorderColor = Color(0xFF38BDF8),
-                            periodSelectorSelectedContainerColor = Color(0xFF38BDF8),
+                            periodSelectorBorderColor = CherryRed,
+                            periodSelectorSelectedContainerColor = CherryRed,
                             periodSelectorUnselectedContainerColor = Color(0xFF1E1E1E),
-                            periodSelectorSelectedContentColor = Color(0xFF000000),
+                            periodSelectorSelectedContentColor = Color.White,
                             periodSelectorUnselectedContentColor = Color.White,
-                            timeSelectorSelectedContainerColor = Color(0xFF38BDF8).copy(alpha = 0.2f),
+                            timeSelectorSelectedContainerColor = CherryRed.copy(alpha = 0.2f),
                             timeSelectorUnselectedContainerColor = Color(0xFF1E1E1E),
-                            timeSelectorSelectedContentColor = Color(0xFF38BDF8),
+                            timeSelectorSelectedContentColor = CherryRed,
                             timeSelectorUnselectedContentColor = Color.White
                         )
                     )
@@ -347,7 +404,7 @@ fun AlarmBottomSheet(
                 onValueChange = { label = it },
                 label = { Text("Alarm Label", color = Color.Gray) },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF38BDF8),
+                    focusedBorderColor = CherryRed,
                     unfocusedBorderColor = Color.Gray,
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
@@ -375,7 +432,7 @@ fun AlarmBottomSheet(
                                 .size(40.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (isSelected) Color(0xFF38BDF8) else Color(0xFF262626)
+                                    if (isSelected) CherryRed else Color(0xFF262626)
                                 )
                                 .clickable {
                                     repeatDays = if (isSelected) {
@@ -388,9 +445,41 @@ fun AlarmBottomSheet(
                         ) {
                             Text(
                                 text = dayLabel,
-                                color = if (isSelected) Color(0xFF000000) else Color.Gray,
+                                color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Snooze Duration Selector (1, 5, 10, 15, 20, 25, 30 min)
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("Snooze Duration", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    snoozeOptions.forEach { option ->
+                        val isSelected = snoozeMinutes == option
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (isSelected) CherryRed else Color(0xFF262626)
+                                )
+                                .clickable { snoozeMinutes = option },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "${option}m",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
                             )
                         }
                     }
@@ -413,14 +502,15 @@ fun AlarmBottomSheet(
                                 hour = timePickerState.hour,
                                 minute = timePickerState.minute,
                                 label = label,
-                                repeatDays = repeatDays
+                                repeatDays = repeatDays,
+                                snoozeMinutes = snoozeMinutes
                             )
                         )
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF38BDF8)),
+                    colors = ButtonDefaults.buttonColors(containerColor = CherryRed),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Save", color = Color(0xFF000000), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Save", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
         }
