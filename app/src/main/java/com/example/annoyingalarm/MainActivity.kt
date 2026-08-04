@@ -63,6 +63,18 @@ class MainActivity : ComponentActivity() {
                         storage.saveAlarms(alarmList.toList())
                         scheduler.schedule(newAlarm)
                     },
+                    onUpdateAlarm = { updatedAlarm ->
+                        val index = alarmList.indexOfFirst { it.id == updatedAlarm.id }
+                        if (index != -1) {
+                            alarmList[index] = updatedAlarm
+                            storage.saveAlarms(alarmList.toList())
+                            if (updatedAlarm.isEnabled) {
+                                scheduler.schedule(updatedAlarm)
+                            } else {
+                                scheduler.cancel(updatedAlarm)
+                            }
+                        }
+                    },
                     onDeleteAlarm = { alarm ->
                         scheduler.cancel(alarm)
                         alarmList.removeIf { it.id == alarm.id }

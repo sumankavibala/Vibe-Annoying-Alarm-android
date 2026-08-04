@@ -27,40 +27,62 @@ class AlarmScheduler(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val calendar = Calendar.getInstance().apply {
-            timeInMillis = System.currentTimeMillis()
-            set(Calendar.HOUR_OF_DAY, alarm.hour)
-            set(Calendar.MINUTE, alarm.minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-
-            // If time is before now, schedule for tomorrow
-            if (timeInMillis <= System.currentTimeMillis()) {
-                add(Calendar.DAY_OF_YEAR, 1)
-            }
-        }
+        val triggerAtMs = calculateNextTriggerTime(alarm.hour, alarm.minute, alarm.repeatDays)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (alarmManager.canScheduleExactAlarms()) {
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
+                    triggerAtMs,
                     pendingIntent
                 )
             } else {
                 alarmManager.setAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
+                    triggerAtMs,
                     pendingIntent
                 )
             }
         } else {
             alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
+                triggerAtMs,
                 pendingIntent
             )
         }
+    }
+
+    fun calculateNextTriggerTime(hour: Int, minute: Int, repeatDays: Set<Int>): Long {
+        val now = Calendar.getInstance()
+        val target = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        if (repeatDays.isEmpty()) {
+            if (target.before(now)) {
+                target.add(Calendar.DAY_OF_YEAR, 1)
+            }
+            return target.timeInMillis
+        }
+
+        // Repeat days selected (Calendar.SUNDAY = 1 ... Calendar.SATURDAY = 7)
+        val currentDay = now.get(Calendar.DAY_OF_WEEK)
+        if (repeatDays.contains(currentDay) && target.after(now)) {
+            return target.timeInMillis
+        }
+
+        for (i in 1..7) {
+            target.add(Calendar.DAY_OF_YEAR, 1)
+            val dayOfWeek = target.get(Calendar.DAY_OF_WEEK)
+            if (repeatDays.contains(dayOfWeek)) {
+                return target.timeInMillis
+            }
+        }
+
+        return target.timeInMillis
     }
 
     fun scheduleSnooze(alarmId: String, label: String, snoozeMinutes: Int = 5) {
