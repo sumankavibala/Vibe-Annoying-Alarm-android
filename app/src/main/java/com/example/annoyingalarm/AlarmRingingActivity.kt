@@ -60,6 +60,7 @@ class AlarmRingingActivity : ComponentActivity() {
         val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Wake Up!"
         val snoozeMinutes = intent.getIntExtra("ALARM_SNOOZE_MINUTES", 5)
         val tapCount = intent.getIntExtra("ALARM_TAP_COUNT", 5)
+        val challengeType = intent.getStringExtra("ALARM_CHALLENGE_TYPE") ?: "TAP"
 
         setContent {
             BackHandler(enabled = true) {
@@ -86,23 +87,39 @@ class AlarmRingingActivity : ComponentActivity() {
                         }
                     )
                 } else {
-                    TapChallengeScreen(
-                        isSnooze = pendingIsSnooze,
-                        snoozeMinutes = snoozeMinutes,
-                        requiredTapCount = tapCount,
-                        onChallengeCompleted = {
-                            val serviceIntent = Intent(this@AlarmRingingActivity, AlarmService::class.java).apply {
-                                action = "STOP_ALARM"
-                            }
-                            startService(serviceIntent)
-
-                            if (pendingIsSnooze) {
-                                AlarmScheduler(applicationContext).scheduleSnooze(alarmId, alarmLabel, snoozeMinutes = snoozeMinutes, tapCount = tapCount)
-                            }
-
-                            finish()
+                    val onCompleted = {
+                        val serviceIntent = Intent(this@AlarmRingingActivity, AlarmService::class.java).apply {
+                            action = "STOP_ALARM"
                         }
-                    )
+                        startService(serviceIntent)
+
+                        if (pendingIsSnooze) {
+                            AlarmScheduler(applicationContext).scheduleSnooze(
+                                alarmId,
+                                alarmLabel,
+                                snoozeMinutes = snoozeMinutes,
+                                tapCount = tapCount,
+                                challengeType = challengeType
+                            )
+                        }
+
+                        finish()
+                    }
+
+                    if (challengeType == "MATH") {
+                        MathChallengeScreen(
+                            isSnooze = pendingIsSnooze,
+                            snoozeMinutes = snoozeMinutes,
+                            onChallengeCompleted = onCompleted
+                        )
+                    } else {
+                        TapChallengeScreen(
+                            isSnooze = pendingIsSnooze,
+                            snoozeMinutes = snoozeMinutes,
+                            requiredTapCount = tapCount,
+                            onChallengeCompleted = onCompleted
+                        )
+                    }
                 }
             }
         }
@@ -331,5 +348,163 @@ fun TapChallengeScreen(
                 modifier = Modifier.padding(bottom = 20.dp)
             )
         }
+    }
+}
+
+@Composable
+fun MathChallengeScreen(
+    isSnooze: Boolean,
+    snoozeMinutes: Int,
+    onChallengeCompleted: () -> Unit
+) {
+    val mathProblem = remember { generateMathProblem() }
+    var userAnswer by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val cherryRed = Color(0xFFDC2626)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF000000))
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Spacer(modifier = Modifier.height(30.dp))
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = if (isSnooze) "Snooze (${snoozeMinutes}m) Math Verification" else "Stop Math Verification",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Solve the math problem to ${if (isSnooze) "Snooze" else "Stop"}!",
+                    color = cherryRed,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Math Expression Card
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF121212)),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "${mathProblem.expression} = ?",
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Answer TextField
+                OutlinedTextField(
+                    value = userAnswer,
+                    onValueChange = {
+                        userAnswer = it.filter { char -> char.isDigit() || char == '-' }
+                        errorMessage = null
+                    },
+                    label = { Text("Your Answer", color = Color.Gray) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                    ),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = cherryRed,
+                        unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedContainerColor = Color(0xFF121212),
+                        unfocusedContainerColor = Color(0xFF121212)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                )
+
+                errorMessage?.let { err ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = err,
+                        color = cherryRed,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                Button(
+                    onClick = {
+                        val parsed = userAnswer.toIntOrNull()
+                        if (parsed == mathProblem.correctAnswer) {
+                            onChallengeCompleted()
+                        } else {
+                            errorMessage = "Incorrect answer! Try again."
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = cherryRed),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text("SUBMIT ANSWER", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            }
+
+            Text(
+                text = "Annoying Alarm Core - Solve problem to dismiss sound",
+                color = Color.Gray,
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 20.dp)
+            )
+        }
+    }
+}
+
+data class MathProblem(val expression: String, val correctAnswer: Int)
+
+fun generateMathProblem(): MathProblem {
+    val a = (1..9).random()
+    val b = (1..9).random()
+    return when ((1..3).random()) {
+        1 -> MathProblem("$a + $b", a + b)
+        2 -> {
+            val max = maxOf(a, b)
+            val min = minOf(a, b)
+            MathProblem("$max - $min", max - min)
+        }
+        else -> MathProblem("$a × $b", a * b)
     }
 }

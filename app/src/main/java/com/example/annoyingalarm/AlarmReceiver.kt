@@ -10,12 +10,14 @@ class AlarmReceiver : BroadcastReceiver() {
         val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Alarm"
         val snoozeMinutes = intent.getIntExtra("ALARM_SNOOZE_MINUTES", 5)
         val tapCount = intent.getIntExtra("ALARM_TAP_COUNT", 5)
+        val challengeType = intent.getStringExtra("ALARM_CHALLENGE_TYPE") ?: "TAP"
 
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
             putExtra("ALARM_ID", alarmId)
             putExtra("ALARM_LABEL", alarmLabel)
             putExtra("ALARM_SNOOZE_MINUTES", snoozeMinutes)
             putExtra("ALARM_TAP_COUNT", tapCount)
+            putExtra("ALARM_CHALLENGE_TYPE", challengeType)
         }
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {

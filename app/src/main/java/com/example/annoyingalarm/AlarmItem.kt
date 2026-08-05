@@ -14,7 +14,8 @@ data class AlarmItem(
     val repeatDays: Set<Int> = emptySet(), // 1 = Sun, 2 = Mon, ..., 7 = Sat
     val snoozeMinutes: Int = 5,
     val snoozeCount: Int = 0,
-    val tapCount: Int = 5
+    val tapCount: Int = 10,
+    val challengeType: String = "TAP" // "TAP" or "MATH"
 ) {
     fun getFormattedTime(): String {
         val displayHour = if (hour == 0) 12 else if (hour > 12) hour - 12 else hour

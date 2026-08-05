@@ -273,8 +273,9 @@ fun AlarmCard(
                         fontWeight = FontWeight.Medium
                     )
                     Spacer(modifier = Modifier.width(8.dp))
+                    val challengeText = if (alarm.challengeType == "MATH") "Math" else "${alarm.tapCount} Taps"
                     Text(
-                        text = "• ${alarm.getRepeatDaysText()} • Snooze ${alarm.snoozeMinutes}m • ${alarm.tapCount} Taps",
+                        text = "• ${alarm.getRepeatDaysText()} • Snooze ${alarm.snoozeMinutes}m • $challengeText",
                         fontSize = 13.sp,
                         color = Color.Gray
                     )
@@ -313,10 +314,9 @@ fun AlarmBottomSheet(
     var label by remember { mutableStateOf(alarm.label) }
     var repeatDays by remember { mutableStateOf(alarm.repeatDays) }
     var snoozeMinutes by remember { mutableStateOf(alarm.snoozeMinutes) }
-    var tapCount by remember { mutableStateOf(alarm.tapCount) }
+    var challengeType by remember { mutableStateOf(alarm.challengeType) }
 
     val snoozeOptions = listOf(1, 5, 10, 15, 20, 25, 30)
-    val tapOptions = listOf(5, 10, 15, 20, 25, 30)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -488,32 +488,33 @@ fun AlarmBottomSheet(
                 }
             }
 
-            // Required Taps to Dismiss Selector
+            // Dismiss Challenge Type Selector (Tap vs Math)
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text("Required Taps to Dismiss", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                Text("Dismiss Challenge Type", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    tapOptions.forEach { option ->
-                        val isSelected = tapCount == option
+                    val challenges = listOf("TAP" to "Tap Challenge", "MATH" to "Math Problem")
+                    challenges.forEach { (typeKey, typeLabel) ->
+                        val isSelected = challengeType == typeKey
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(38.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(10.dp))
                                 .background(
                                     if (isSelected) CherryRed else Color(0xFF121212)
                                 )
-                                .clickable { tapCount = option },
+                                .clickable { challengeType = typeKey },
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "${option}x",
+                                text = typeLabel,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
+                                fontSize = 14.sp
                             )
                         }
                     }
@@ -538,7 +539,8 @@ fun AlarmBottomSheet(
                                 label = label,
                                 repeatDays = repeatDays,
                                 snoozeMinutes = snoozeMinutes,
-                                tapCount = tapCount
+                                tapCount = 10,
+                                challengeType = challengeType
                             )
                         )
                     },
