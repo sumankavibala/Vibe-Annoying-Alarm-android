@@ -30,10 +30,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.example.annoyingalarm.ui.components.InterstitialAdManager
+
+import androidx.activity.compose.BackHandler
+
 class AlarmRingingActivity : ComponentActivity() {
+
+    private var currentStep by mutableStateOf("RINGING") // "RINGING" or "TAP_CHALLENGE"
+    private var pendingIsSnooze by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Preload Interstitial Ad as soon as alarm starts ringing
+        InterstitialAdManager.loadAd(this)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
@@ -51,47 +61,58 @@ class AlarmRingingActivity : ComponentActivity() {
         val snoozeMinutes = intent.getIntExtra("ALARM_SNOOZE_MINUTES", 5)
 
         setContent {
+            BackHandler(enabled = true) {
+                // Prevent hardware back button from closing alarm ringing screen
+            }
+
             MaterialTheme(
                 colorScheme = darkColorScheme(
                     background = Color(0xFF000000),
                     surface = Color(0xFF121212)
                 )
             ) {
-                AlarmRingingScreen(
-                    label = alarmLabel,
-                    snoozeMinutes = snoozeMinutes,
-                    onSnoozeRequested = { showAdScreen(isSnooze = true, alarmId = alarmId, label = alarmLabel, snoozeMinutes = snoozeMinutes) },
-                    onStopRequested = { showAdScreen(isSnooze = false, alarmId = alarmId, label = alarmLabel, snoozeMinutes = snoozeMinutes) }
-                )
+                if (currentStep == "RINGING") {
+                    AlarmRingingScreen(
+                        label = alarmLabel,
+                        snoozeMinutes = snoozeMinutes,
+                        onSnoozeRequested = {
+                            pendingIsSnooze = true
+                            triggerAdAndGoToTapChallenge()
+                        },
+                        onStopRequested = {
+                            pendingIsSnooze = false
+                            triggerAdAndGoToTapChallenge()
+                        }
+                    )
+                } else {
+                    TapChallengeScreen(
+                        isSnooze = pendingIsSnooze,
+                        snoozeMinutes = snoozeMinutes,
+                        onChallengeCompleted = {
+                            val serviceIntent = Intent(this@AlarmRingingActivity, AlarmService::class.java).apply {
+                                action = "STOP_ALARM"
+                            }
+                            startService(serviceIntent)
+
+                            if (pendingIsSnooze) {
+                                AlarmScheduler(applicationContext).scheduleSnooze(alarmId, alarmLabel, snoozeMinutes = snoozeMinutes)
+                            }
+
+                            finish()
+                        }
+                    )
+                }
             }
         }
     }
 
-    private fun showAdScreen(isSnooze: Boolean, alarmId: String, label: String, snoozeMinutes: Int) {
-        setContent {
-            MaterialTheme(
-                colorScheme = darkColorScheme(
-                    background = Color(0xFF000000),
-                    surface = Color(0xFF121212)
-                )
-            ) {
-                AnnoyingAdOverlay(
-                    isSnooze = isSnooze,
-                    snoozeMinutes = snoozeMinutes,
-                    onAdCompleted = {
-                        val serviceIntent = Intent(this@AlarmRingingActivity, AlarmService::class.java).apply {
-                            action = "STOP_ALARM"
-                        }
-                        startService(serviceIntent)
+    private fun triggerAdAndGoToTapChallenge() {
+        // Transition step to TAP_CHALLENGE immediately so activity content is ready
+        currentStep = "TAP_CHALLENGE"
 
-                        if (isSnooze) {
-                            AlarmScheduler(applicationContext).scheduleSnooze(alarmId, label, snoozeMinutes = snoozeMinutes)
-                        }
-
-                        finish()
-                    }
-                )
-            }
+        // Show real AdMob Interstitial Ad on top
+        InterstitialAdManager.showAd(this@AlarmRingingActivity) {
+            // Ad dismissed callback
         }
     }
 }
@@ -228,28 +249,14 @@ fun AlarmRingingScreen(
 }
 
 @Composable
-fun AnnoyingAdOverlay(
+fun TapChallengeScreen(
     isSnooze: Boolean,
     snoozeMinutes: Int,
-    onAdCompleted: () -> Unit
+    onChallengeCompleted: () -> Unit
 ) {
-    var timeLeftSeconds by remember { mutableStateOf(10) }
-    var tapCountRequired by remember { mutableStateOf(5) }
+    val tapCountRequired = 5
     var userTaps by remember { mutableStateOf(0) }
-    var isTimerFinished by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        object : CountDownTimer(10000, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                timeLeftSeconds = (millisUntilFinished / 1000).toInt() + 1
-            }
-
-            override fun onFinish() {
-                timeLeftSeconds = 0
-                isTimerFinished = true
-            }
-        }.start()
-    }
+    val cherryRed = Color(0xFFDC2626)
 
     Box(
         modifier = Modifier
@@ -263,34 +270,7 @@ fun AnnoyingAdOverlay(
             verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxSize()
         ) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF121212)),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        color = Color(0xFFDC2626),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            "AD",
-                            color = Color.White,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text("Super Deluxe Coffee Machine", fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("Wake up instantly with 50% OFF!", color = Color.Gray, fontSize = 12.sp)
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(40.dp))
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -298,50 +278,32 @@ fun AnnoyingAdOverlay(
             ) {
                 Text(
                     text = if (isSnooze) "Snooze (${snoozeMinutes}m) Verification" else "Stop Verification",
-                    fontSize = 24.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = Color.White,
+                    textAlign = TextAlign.Center
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (!isTimerFinished) {
-                    Text(
-                        text = "Mandatory Ad Viewing: $timeLeftSeconds seconds remaining...",
-                        color = Color(0xFFF59E0B),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    CircularProgressIndicator(
-                        progress = { (10 - timeLeftSeconds) / 10f },
-                        modifier = Modifier.size(64.dp),
-                        color = Color(0xFFDC2626),
-                        trackColor = Color.Gray.copy(alpha = 0.3f),
-                    )
-                } else {
-                    Text(
-                        text = "Final Challenge: Tap the button ${tapCountRequired - userTaps} more times to ${if (isSnooze) "Snooze" else "Stop"}!",
-                        color = Color(0xFF10B981),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                }
+                Text(
+                    text = "Tap the button ${tapCountRequired - userTaps} more time${if (tapCountRequired - userTaps > 1) "s" else ""} to ${if (isSnooze) "Snooze" else "Stop"}!",
+                    color = cherryRed,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(48.dp))
 
                 Box(
                     modifier = Modifier
-                        .size(160.dp)
+                        .size(170.dp)
                         .clip(CircleShape)
-                        .background(
-                            if (isTimerFinished) Color(0xFF10B981) else Color.Gray.copy(alpha = 0.3f)
-                        )
-                        .clickable(enabled = isTimerFinished) {
+                        .background(cherryRed)
+                        .clickable {
                             if (userTaps + 1 >= tapCountRequired) {
-                                onAdCompleted()
+                                onChallengeCompleted()
                             } else {
                                 userTaps += 1
                             }
@@ -349,20 +311,21 @@ fun AnnoyingAdOverlay(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (!isTimerFinished) "WAIT..." else "TAP ME!\n(${tapCountRequired - userTaps})",
+                        text = "TAP ME!\n(${tapCountRequired - userTaps})",
                         color = Color.White,
                         fontWeight = FontWeight.Black,
-                        fontSize = 20.sp,
+                        fontSize = 22.sp,
                         textAlign = TextAlign.Center
                     )
                 }
             }
 
             Text(
-                text = "Annoying Alarm Core - Sound will play until completed",
+                text = "Annoying Alarm Core - Complete taps to dismiss sound",
                 color = Color.Gray,
-                fontSize = 12.sp,
-                textAlign = TextAlign.Center
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 20.dp)
             )
         }
     }

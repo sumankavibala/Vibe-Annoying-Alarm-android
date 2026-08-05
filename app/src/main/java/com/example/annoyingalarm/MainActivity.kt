@@ -13,6 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 
+import com.example.annoyingalarm.ui.components.InterstitialAdManager
+import com.google.android.gms.ads.MobileAds
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var storage: AlarmStorage
@@ -25,6 +28,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        MobileAds.initialize(this) {
+            InterstitialAdManager.loadAd(this)
+        }
 
         storage = AlarmStorage(applicationContext)
         scheduler = AlarmScheduler(applicationContext)

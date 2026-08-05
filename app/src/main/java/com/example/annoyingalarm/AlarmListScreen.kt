@@ -319,7 +319,7 @@ fun AlarmBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color(0xFF121212),
+        containerColor = Color(0xFF000000),
         dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
     ) {
         Column(
@@ -365,12 +365,12 @@ fun AlarmBottomSheet(
                         state = timePickerState,
                         colors = TimePickerDefaults.colors(
                             timeSelectorSelectedContainerColor = CherryRed.copy(alpha = 0.2f),
-                            timeSelectorUnselectedContainerColor = Color(0xFF1E1E1E),
+                            timeSelectorUnselectedContainerColor = Color(0xFF121212),
                             timeSelectorSelectedContentColor = CherryRed,
                             timeSelectorUnselectedContentColor = Color.White,
                             periodSelectorBorderColor = CherryRed,
                             periodSelectorSelectedContainerColor = CherryRed,
-                            periodSelectorUnselectedContainerColor = Color(0xFF1E1E1E),
+                            periodSelectorUnselectedContainerColor = Color(0xFF121212),
                             periodSelectorSelectedContentColor = Color.White,
                             periodSelectorUnselectedContentColor = Color.White
                         )
@@ -379,18 +379,18 @@ fun AlarmBottomSheet(
                     TimePicker(
                         state = timePickerState,
                         colors = TimePickerDefaults.colors(
-                            clockDialColor = Color(0xFF1E1E1E),
+                            clockDialColor = Color(0xFF121212),
                             clockDialSelectedContentColor = Color.White,
                             clockDialUnselectedContentColor = Color.White,
                             selectorColor = CherryRed,
-                            containerColor = Color(0xFF1E1E1E),
+                            containerColor = Color(0xFF121212),
                             periodSelectorBorderColor = CherryRed,
                             periodSelectorSelectedContainerColor = CherryRed,
-                            periodSelectorUnselectedContainerColor = Color(0xFF1E1E1E),
+                            periodSelectorUnselectedContainerColor = Color(0xFF121212),
                             periodSelectorSelectedContentColor = Color.White,
                             periodSelectorUnselectedContentColor = Color.White,
                             timeSelectorSelectedContainerColor = CherryRed.copy(alpha = 0.2f),
-                            timeSelectorUnselectedContainerColor = Color(0xFF1E1E1E),
+                            timeSelectorUnselectedContainerColor = Color(0xFF121212),
                             timeSelectorSelectedContentColor = CherryRed,
                             timeSelectorUnselectedContentColor = Color.White
                         )
@@ -408,8 +408,8 @@ fun AlarmBottomSheet(
                     unfocusedBorderColor = Color.Gray,
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
-                    focusedContainerColor = Color(0xFF1E1E1E),
-                    unfocusedContainerColor = Color(0xFF1E1E1E)
+                    focusedContainerColor = Color(0xFF121212),
+                    unfocusedContainerColor = Color(0xFF121212)
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -432,7 +432,7 @@ fun AlarmBottomSheet(
                                 .size(40.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (isSelected) CherryRed else Color(0xFF262626)
+                                    if (isSelected) CherryRed else Color(0xFF121212)
                                 )
                                 .clickable {
                                     repeatDays = if (isSelected) {
@@ -470,7 +470,7 @@ fun AlarmBottomSheet(
                                 .height(38.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(
-                                    if (isSelected) CherryRed else Color(0xFF262626)
+                                    if (isSelected) CherryRed else Color(0xFF121212)
                                 )
                                 .clickable { snoozeMinutes = option },
                             contentAlignment = Alignment.Center

@@ -20,6 +20,12 @@
         android:supportsRtl="true"
         android:windowSoftInputMode="adjustResize"
         android:theme="@style/Theme.AnnoyingAlarm">
+
+        <!-- AdMob Sample Application ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-6588353673153309~3682716368" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -35,7 +41,8 @@
             android:showOnLockScreen="true"
             android:turnScreenOn="true"
             android:excludeFromRecents="true"
-            android:launchMode="singleInstance"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.example.annoyingalarm.ringing"
             android:theme="@style/Theme.AnnoyingAlarm" />
 
         <receiver
