@@ -19,6 +19,7 @@ class AlarmScheduler(private val context: Context) {
             putExtra("ALARM_HOUR", alarm.hour)
             putExtra("ALARM_MINUTE", alarm.minute)
             putExtra("ALARM_SNOOZE_MINUTES", alarm.snoozeMinutes)
+            putExtra("ALARM_TAP_COUNT", alarm.tapCount)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -76,11 +77,12 @@ class AlarmScheduler(private val context: Context) {
         return target.timeInMillis
     }
 
-    fun scheduleSnooze(alarmId: String, label: String, snoozeMinutes: Int = 5) {
+    fun scheduleSnooze(alarmId: String, label: String, snoozeMinutes: Int = 5, tapCount: Int = 5) {
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             putExtra("ALARM_ID", alarmId)
             putExtra("ALARM_LABEL", label)
             putExtra("ALARM_SNOOZE_MINUTES", snoozeMinutes)
+            putExtra("ALARM_TAP_COUNT", tapCount)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(

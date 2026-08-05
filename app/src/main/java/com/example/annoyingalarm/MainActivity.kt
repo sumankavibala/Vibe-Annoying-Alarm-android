@@ -106,6 +106,7 @@ class MainActivity : ComponentActivity() {
                 putExtra("ALARM_ID", AlarmService.activeAlarmId)
                 putExtra("ALARM_LABEL", AlarmService.activeAlarmLabel)
                 putExtra("ALARM_SNOOZE_MINUTES", AlarmService.activeSnoozeMinutes)
+                putExtra("ALARM_TAP_COUNT", AlarmService.activeTapCount)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
             startActivity(ringingIntent)

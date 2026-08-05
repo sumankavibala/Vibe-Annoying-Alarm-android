@@ -38,6 +38,7 @@ class AlarmService : Service() {
         activeAlarmId = intent?.getStringExtra("ALARM_ID") ?: ""
         activeAlarmLabel = intent?.getStringExtra("ALARM_LABEL") ?: "Alarm Ringing"
         activeSnoozeMinutes = intent?.getIntExtra("ALARM_SNOOZE_MINUTES", 5) ?: 5
+        activeTapCount = intent?.getIntExtra("ALARM_TAP_COUNT", 5) ?: 5
         isAlarmRinging = true
 
         createNotificationChannel()
@@ -49,6 +50,7 @@ class AlarmService : Service() {
             putExtra("ALARM_ID", activeAlarmId)
             putExtra("ALARM_LABEL", activeAlarmLabel)
             putExtra("ALARM_SNOOZE_MINUTES", activeSnoozeMinutes)
+            putExtra("ALARM_TAP_COUNT", activeTapCount)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         startActivity(fullScreenIntent)
@@ -61,6 +63,7 @@ class AlarmService : Service() {
             putExtra("ALARM_ID", activeAlarmId)
             putExtra("ALARM_LABEL", activeAlarmLabel)
             putExtra("ALARM_SNOOZE_MINUTES", activeSnoozeMinutes)
+            putExtra("ALARM_TAP_COUNT", activeTapCount)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
 
@@ -187,5 +190,6 @@ class AlarmService : Service() {
         var activeAlarmId: String = ""
         var activeAlarmLabel: String = ""
         var activeSnoozeMinutes: Int = 5
+        var activeTapCount: Int = 5
     }
 }

@@ -59,6 +59,7 @@ class AlarmRingingActivity : ComponentActivity() {
         val alarmId = intent.getStringExtra("ALARM_ID") ?: ""
         val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Wake Up!"
         val snoozeMinutes = intent.getIntExtra("ALARM_SNOOZE_MINUTES", 5)
+        val tapCount = intent.getIntExtra("ALARM_TAP_COUNT", 5)
 
         setContent {
             BackHandler(enabled = true) {
@@ -88,6 +89,7 @@ class AlarmRingingActivity : ComponentActivity() {
                     TapChallengeScreen(
                         isSnooze = pendingIsSnooze,
                         snoozeMinutes = snoozeMinutes,
+                        requiredTapCount = tapCount,
                         onChallengeCompleted = {
                             val serviceIntent = Intent(this@AlarmRingingActivity, AlarmService::class.java).apply {
                                 action = "STOP_ALARM"
@@ -95,7 +97,7 @@ class AlarmRingingActivity : ComponentActivity() {
                             startService(serviceIntent)
 
                             if (pendingIsSnooze) {
-                                AlarmScheduler(applicationContext).scheduleSnooze(alarmId, alarmLabel, snoozeMinutes = snoozeMinutes)
+                                AlarmScheduler(applicationContext).scheduleSnooze(alarmId, alarmLabel, snoozeMinutes = snoozeMinutes, tapCount = tapCount)
                             }
 
                             finish()
@@ -252,9 +254,10 @@ fun AlarmRingingScreen(
 fun TapChallengeScreen(
     isSnooze: Boolean,
     snoozeMinutes: Int,
+    requiredTapCount: Int = 5,
     onChallengeCompleted: () -> Unit
 ) {
-    val tapCountRequired = 5
+    val tapCountRequired = requiredTapCount
     var userTaps by remember { mutableStateOf(0) }
     val cherryRed = Color(0xFFDC2626)
 

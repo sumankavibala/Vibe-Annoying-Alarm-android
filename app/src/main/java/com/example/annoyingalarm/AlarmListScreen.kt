@@ -274,7 +274,7 @@ fun AlarmCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "• ${alarm.getRepeatDaysText()} • Snooze ${alarm.snoozeMinutes}m",
+                        text = "• ${alarm.getRepeatDaysText()} • Snooze ${alarm.snoozeMinutes}m • ${alarm.tapCount} Taps",
                         fontSize = 13.sp,
                         color = Color.Gray
                     )
@@ -313,8 +313,10 @@ fun AlarmBottomSheet(
     var label by remember { mutableStateOf(alarm.label) }
     var repeatDays by remember { mutableStateOf(alarm.repeatDays) }
     var snoozeMinutes by remember { mutableStateOf(alarm.snoozeMinutes) }
+    var tapCount by remember { mutableStateOf(alarm.tapCount) }
 
     val snoozeOptions = listOf(1, 5, 10, 15, 20, 25, 30)
+    val tapOptions = listOf(5, 10, 15, 20, 25, 30)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -454,7 +456,7 @@ fun AlarmBottomSheet(
                 }
             }
 
-            // Snooze Duration Selector (1, 5, 10, 15, 20, 25, 30 min)
+            // Snooze Duration Selector
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text("Snooze Duration", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -486,6 +488,38 @@ fun AlarmBottomSheet(
                 }
             }
 
+            // Required Taps to Dismiss Selector
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("Required Taps to Dismiss", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    tapOptions.forEach { option ->
+                        val isSelected = tapCount == option
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (isSelected) CherryRed else Color(0xFF121212)
+                                )
+                                .clickable { tapCount = option },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "${option}x",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            }
+
             // Save and Cancel Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -503,7 +537,8 @@ fun AlarmBottomSheet(
                                 minute = timePickerState.minute,
                                 label = label,
                                 repeatDays = repeatDays,
-                                snoozeMinutes = snoozeMinutes
+                                snoozeMinutes = snoozeMinutes,
+                                tapCount = tapCount
                             )
                         )
                     },
