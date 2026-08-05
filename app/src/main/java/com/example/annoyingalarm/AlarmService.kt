@@ -28,18 +28,39 @@ class AlarmService : Service() {
             stopAlarm()
             stopSelf()
             return START_NOT_STICKY
+        } else if (action == "REPOST_NOTIFICATION") {
+            if (isAlarmRinging) {
+                showRingingNotification()
+            }
+            return START_STICKY
         }
 
-        val alarmId = intent?.getStringExtra("ALARM_ID") ?: ""
-        val alarmLabel = intent?.getStringExtra("ALARM_LABEL") ?: "Alarm Ringing"
-        val snoozeMinutes = intent?.getIntExtra("ALARM_SNOOZE_MINUTES", 5) ?: 5
+        activeAlarmId = intent?.getStringExtra("ALARM_ID") ?: ""
+        activeAlarmLabel = intent?.getStringExtra("ALARM_LABEL") ?: "Alarm Ringing"
+        activeSnoozeMinutes = intent?.getIntExtra("ALARM_SNOOZE_MINUTES", 5) ?: 5
+        isAlarmRinging = true
 
         createNotificationChannel()
+        showRingingNotification()
+
+        startRingingAndVibrating()
 
         val fullScreenIntent = Intent(this, AlarmRingingActivity::class.java).apply {
-            putExtra("ALARM_ID", alarmId)
-            putExtra("ALARM_LABEL", alarmLabel)
-            putExtra("ALARM_SNOOZE_MINUTES", snoozeMinutes)
+            putExtra("ALARM_ID", activeAlarmId)
+            putExtra("ALARM_LABEL", activeAlarmLabel)
+            putExtra("ALARM_SNOOZE_MINUTES", activeSnoozeMinutes)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        startActivity(fullScreenIntent)
+
+        return START_STICKY
+    }
+
+    private fun showRingingNotification() {
+        val fullScreenIntent = Intent(this, AlarmRingingActivity::class.java).apply {
+            putExtra("ALARM_ID", activeAlarmId)
+            putExtra("ALARM_LABEL", activeAlarmLabel)
+            putExtra("ALARM_SNOOZE_MINUTES", activeSnoozeMinutes)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
 
@@ -50,23 +71,32 @@ class AlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // DeleteIntent: If notification is swiped, re-post immediately so user never loses control
+        val deleteIntent = Intent(this, AlarmService::class.java).apply {
+            action = "REPOST_NOTIFICATION"
+        }
+        val deletePendingIntent = PendingIntent.getService(
+            this,
+            1,
+            deleteIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("ALARM RINGING!")
-            .setContentText(alarmLabel)
+            .setContentText(activeAlarmLabel)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setFullScreenIntent(fullScreenPendingIntent, true)
+            .setContentIntent(fullScreenPendingIntent)
+            .setDeleteIntent(deletePendingIntent)
+            .addAction(android.R.drawable.ic_menu_view, "OPEN ALARM", fullScreenPendingIntent)
             .setOngoing(true)
             .build()
 
         startForeground(NOTIFICATION_ID, notification)
-
-        startRingingAndVibrating()
-
-        startActivity(fullScreenIntent)
-
-        return START_STICKY
     }
 
     private fun startRingingAndVibrating() {
@@ -112,6 +142,7 @@ class AlarmService : Service() {
     }
 
     private fun stopAlarm() {
+        isAlarmRinging = false
         try {
             mediaPlayer?.stop()
             mediaPlayer?.release()
@@ -151,5 +182,10 @@ class AlarmService : Service() {
     companion object {
         const val CHANNEL_ID = "annoying_alarm_channel"
         const val NOTIFICATION_ID = 1001
+
+        var isAlarmRinging: Boolean = false
+        var activeAlarmId: String = ""
+        var activeAlarmLabel: String = ""
+        var activeSnoozeMinutes: Int = 5
     }
 }

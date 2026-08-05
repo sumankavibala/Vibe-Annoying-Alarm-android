@@ -1,6 +1,7 @@
 package com.example.annoyingalarm
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -95,6 +96,19 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (AlarmService.isAlarmRinging) {
+            val ringingIntent = Intent(this, AlarmRingingActivity::class.java).apply {
+                putExtra("ALARM_ID", AlarmService.activeAlarmId)
+                putExtra("ALARM_LABEL", AlarmService.activeAlarmLabel)
+                putExtra("ALARM_SNOOZE_MINUTES", AlarmService.activeSnoozeMinutes)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+            startActivity(ringingIntent)
         }
     }
 

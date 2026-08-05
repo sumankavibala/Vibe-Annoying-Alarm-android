@@ -30,27 +30,18 @@ class AlarmScheduler(private val context: Context) {
 
         val triggerAtMs = calculateNextTriggerTime(alarm.hour, alarm.minute, alarm.repeatDays)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMs,
-                    pendingIntent
-                )
-            } else {
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMs,
-                    pendingIntent
-                )
-            }
-        } else {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMs,
-                pendingIntent
-            )
-        }
+        val showIntent = Intent(context, MainActivity::class.java)
+        val showPendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            showIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // setAlarmClock allows Android Doze mode to stay asleep with 0% background battery usage,
+        // while guaranteeing exact-time hardware wakeup when the alarm is due.
+        val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMs, showPendingIntent)
+        alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
     }
 
     fun calculateNextTriggerTime(hour: Int, minute: Int, repeatDays: Set<Int>): Long {
