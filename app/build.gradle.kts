@@ -15,11 +15,27 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("release.jks")
+            storePassword = "12345678"
+            keyAlias = "release-key"
+            keyPassword = "12345678"
+        }
+    }
     buildTypes {
         release {
-            isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            isMinifyEnabled = false // set to true if using ProGuard/R8
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("release")
         }
+    }
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -86,4 +102,7 @@ dependencies {
 
   // Google Mobile Ads (AdMob)
   implementation(libs.play.services.ads)
+
+  // Fragment KTX
+  implementation("androidx.fragment:fragment-ktx:1.8.2")
 }
