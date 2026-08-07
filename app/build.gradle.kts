@@ -15,12 +15,15 @@ android {
         versionName = "1.0"
     }
 
+    val releaseKeystore = file("release.jks")
     signingConfigs {
-        create("release") {
-            storeFile = file("release.jks")
-            storePassword = "12345678"
-            keyAlias = "release-key"
-            keyPassword = "12345678"
+        if (releaseKeystore.exists()) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = "12345678"
+                keyAlias = "release-key"
+                keyPassword = "12345678"
+            }
         }
     }
     buildTypes {
@@ -30,7 +33,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            if (releaseKeystore.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
     lint {
